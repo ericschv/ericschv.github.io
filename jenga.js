@@ -7,9 +7,14 @@ var jengaGame = (function(){
 
 	var scene = new Physijs.Scene({ fixedTimeStep: 1 / 120 }),
 	renderer = window.WebGLRenderingContext ? new THREE.WebGLRenderer({antialias: true}) : new THREE.CanvasRenderer(),
+    amb_light, //Hao
+    dir_light, //Hao
 	camera,
+	backgroundscene = new THREE.Scene(), //background scene(image) //Hao
+	backgroundCamera = new THREE.Camera(),//background cam //Hao
 	physics_stats,
 	controls, // mouse control
+	table, // playing surface for jenga //Hao
 	rectangle, // jenga object type
 	tower, // jenga tower i.e. total sum of jenga pieces
 	blocks = [],
@@ -57,6 +62,8 @@ var jengaGame = (function(){
 		);
 
 		renderer.setSize(window.innerWidth, window.innerHeight);
+		renderer.shadowMap.enabled = true;//enable shadow //Hao
+        renderer.shadowMapSoft = true; //Hao
 		document.getElementById("jenga-container").appendChild(renderer.domElement);
 
 		camera = new THREE.PerspectiveCamera(
@@ -66,7 +73,54 @@ var jengaGame = (function(){
 			1000
 			);
 
-	 	//tower = jengaPiece();
+		
+		camera.position.set( 115, 75, 115 );
+		camera.lookAt(new THREE.Vector3( 0, 35, 0 ));
+        scene.add(camera);
+        // ambient light
+		amb_light = new THREE.AmbientLight( 0x444444 );
+		scene.add( amb_light );
+
+        // directional light
+		dir_light = new THREE.DirectionalLight( 0xFFFFFF  );
+		dir_light.position.set( 100, 100, -20 );
+        dir_light.target.position.copy( scene.position );
+        dir_light.castShadow = true;
+        dir_light.shadowCameraLeft = -300;
+		dir_light.shadowCameraTop = -300;
+		dir_light.shadowCameraRight = 300;
+		dir_light.shadowCameraBottom = 300;
+		dir_light.shadowCameraNear = 20;
+		dir_light.shadowCameraFar = 500;
+		dir_light.shadowBias = -.001;
+		dir_light.shadowMapWidth = dir_light.shadowMapHeight = 2048;
+		dir_light.shadowDarkness = 0.5;
+
+        scene.add(dir_light );
+		
+		var tableTexture = Physijs.createMaterial(
+				new THREE.MeshLambertMaterial({map: loader.load('texture/wood7.jpg')}),
+				.9,
+				.2
+			);
+	         
+	 	table = new Physijs.BoxMesh(
+	 		new THREE.BoxGeometry(160, 1, 150, 5, 5, 5),
+	 		tableTexture,
+	 		0, // mass
+	 		{ restitution: .2, friction: .8}
+	 	);
+
+        table.receiveShadow = true;//jenga shadow
+	          
+	  	table.name = "table"; 
+
+	  	table.position.y = -3; // table position in relation to jenga tower
+	  	
+	 	scene.add(table);
+		
+
+	 	
 		for(var i=0; i<16; i++)
 		{
 			for(var j=0; j<3; j++)
@@ -86,6 +140,8 @@ var jengaGame = (function(){
 					tower.position.z -= 10;
 				}
 
+				tower.castShadow = true; //Hao
+				tower.receiveShadow = true; //Hao
 				scene.add(tower);
 				blocks.push(tower);
 
@@ -103,6 +159,22 @@ var jengaGame = (function(){
 		);
 		intersect_plane.rotation.x = Math.PI / -2;
 		scene.add( intersect_plane );
+
+		
+		//background texture
+        var bkgMesh = new THREE.Mesh(
+            new THREE.PlaneGeometry(2, 2, 0),
+            new THREE.MeshBasicMaterial({
+            	map: loader.load('texture/background.jpg')
+            }));
+        bkgMesh .material.depthTest = false;
+        //Whether to have depth test enabled when rendering this material. Default is true.
+        bkgMesh .material.depthWrite = false;
+        //Whether rendering this material has any effect on the depth buffer. Default is true.
+        //When drawing 2D overlays it can be useful to disable the depth writing in order to layer several things together //without creating z-index artifacts.
+        backgroundscene.add(backgroundCamera);
+        backgroundscene.add(bkgMesh);
+		
 
         render();
 	}
@@ -122,6 +194,8 @@ var jengaGame = (function(){
 
 		rectangle.rotation.x = Math.PI/2;
 		rectangle.rotation.y = Math.PI/2;
+		rectangle.castShadow = true; //Hao
+		rectangle.receiveShadow = true; //Hao
 
 		return rectangle;
 	}
@@ -187,6 +261,12 @@ var jengaGame = (function(){
 		};
 
 	function render(){
+
+		
+		renderer.autoClear = false;//efines whether the renderer should automatically clear its output before rendering.
+        renderer.clear();
+  		renderer.render(backgroundscene, backgroundCamera);
+		
 
 		scene.simulate(); // starts the physijs physics engine
 
