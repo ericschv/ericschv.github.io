@@ -173,7 +173,7 @@ var jengaGame = (function(){
         //Whether rendering this material has any effect on the depth buffer. Default is true.
         //When drawing 2D overlays it can be useful to disable the depth writing in order to layer several things together //without creating z-index artifacts.
         backgroundscene.add(backgroundCamera);
-        backgroundscene.add(bkgMesh);
+        //backgroundscene.add(bkgMesh);
 		
 
         render();
