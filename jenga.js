@@ -174,8 +174,6 @@ var jengaGame = (function(){
         //When drawing 2D overlays it can be useful to disable the depth writing in order to layer several things together //without creating z-index artifacts.
         backgroundscene.add(backgroundCamera);
         //backgroundscene.add(bkgMesh);
-		
-        backgroundscene.background = new THREE.Color( #eaeaea );
 						     
         render();
 	}
