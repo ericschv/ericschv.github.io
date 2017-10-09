@@ -175,7 +175,7 @@ var jengaGame = (function(){
         backgroundscene.add(backgroundCamera);
         //backgroundscene.add(bkgMesh);
 		
-        backgroundscene.background = new THREE.Color( #eaeaea ),
+        backgroundscene.background = new THREE.Color( #eaeaea );
 						     
         render();
 	}
