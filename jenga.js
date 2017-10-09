@@ -10,7 +10,7 @@ var jengaGame = (function(){
     amb_light, //Hao
     dir_light, //Hao
 	camera,
-	backgroundscene = new THREE.Scene(), //background scene(image) //Hao
+	backgroundscene = new THREE.Scene(), //background scene
 	backgroundCamera = new THREE.Camera(),//background cam //Hao
 	physics_stats,
 	controls, // mouse control
@@ -175,6 +175,7 @@ var jengaGame = (function(){
         backgroundscene.add(backgroundCamera);
         //backgroundscene.add(bkgMesh);
 		
+	backgroundscene.background = new THREE.Color( #eaeaea ),
 
         render();
 	}
