@@ -1,3 +1,5 @@
+const JENGA_OBJECT_MASS = 10;
+
 function createRectangle(scene, xRotation, yRotation, zRotation, xPosition, yPosition, zPosition) {
     const box = BABYLON.MeshBuilder.CreateBox(
         "Box",
@@ -15,29 +17,25 @@ function createRectangle(scene, xRotation, yRotation, zRotation, xPosition, yPos
     box.position = new BABYLON.Vector3(xPosition, yPosition, zPosition);
     box.rotation = new BABYLON.Vector3(xRotation, yRotation, zRotation);
     box.material = materialWood;
-
-    box.physicsImpostor = new BABYLON.PhysicsImpostor(box, BABYLON.PhysicsImpostor.BoxImpostor, { mass: 20, friction: 0.3, restitution: 0.3 }, scene);
+    box.physicsImpostor = new BABYLON.PhysicsImpostor(box, BABYLON.PhysicsImpostor.BoxImpostor, { mass: JENGA_OBJECT_MASS, friction: 0.5, restitution: 0.3 }, scene);
 
     return box;
 }
 
 function createGround(scene) {
     const ground = BABYLON.MeshBuilder.CreateBox("Ground", {width: 1000, height: 1, depth: 1000}, scene);
-    const groundMat = new BABYLON.StandardMaterial("groundMat", scene);
+    const material = new BABYLON.StandardMaterial("groundMat", scene);
     
     ground.position.y = 0;
-    groundMat.diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5);
-    groundMat.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
-    groundMat.backFaceCulling = false;
-    ground.material = groundMat;
+    material.diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5);
+    material.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+    material.backFaceCulling = false;
+    ground.material = material;
     ground.receiveShadows = true;
-
-    ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground, BABYLON.PhysicsImpostor.BoxImpostor, { mass: 0, friction: 0.5, restitution: 0.5 }, scene);
+    ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground, BABYLON.PhysicsImpostor.BoxImpostor, { mass: 0, friction: 1, restitution: 0.5 }, scene);
 }
 
 function createJengaTower(scene, shadowGenerator) {
-    const objects = [];
-    
     for(let i = 1; i <= 18; i++) {
         const yRotation = i % 2 === 0 ? 1.57 : 0;
         const yPosition = i;
@@ -50,15 +48,13 @@ function createJengaTower(scene, shadowGenerator) {
             const rectangle = createRectangle(scene, 0, yRotation, 0, xPosition, yPosition, zPosition);
             shadowGenerator.addShadowCaster(rectangle);
             rectangle.addBehavior(pointerDragBehavior);
-            objects.push(rectangle);
         }
     }
-    
-    return objects;
 }
 
 // CreateScene function that creates and return the scene
-function createScene (canvas) {
+function createScene () {
+    const canvas = document.getElementById('renderCanvas');
     const engine = new BABYLON.Engine(canvas, true, {preserveDrawingBuffer: true, stencil: true});
     const scene = new BABYLON.Scene(engine);
     const camera = new BABYLON.ArcRotateCamera("Camera", 3 * Math.PI / 2, Math.PI / 2, 50, BABYLON.Vector3.Zero(), scene);
@@ -68,39 +64,45 @@ function createScene (canvas) {
     scene.enablePhysics(null, new BABYLON.AmmoJSPlugin());
     scene.clearColor = BABYLON.Color3.Purple();
     
-    camera.setPosition(new BABYLON.Vector3(0, 30, 30))
+    camera.setPosition(new BABYLON.Vector3(0, 40, 40))
     camera.attachControl(canvas, true);
-
+    
     light.position = new BABYLON.Vector3(0, 80, 0);
-
+    
     createGround(scene);
-
-    const jengaObjects = createJengaTower(scene, shadowGenerator);
-
-    // camera.target = jengaObjects[jengaObjects.length/2];
+    
+    createJengaTower(scene, shadowGenerator);
 
     return {
-        camera,
         engine,
         scene
     };
 }
 
-// call the createScene function
-const canvas = document.getElementById('renderCanvas');
-var { camera, engine, scene } = createScene(canvas);
+let pickedJengaObject;
+const { engine, scene } = createScene();
 
-// run the render loop
 engine.runRenderLoop(function() {
     scene.render();
 });
 
-// the canvas/window resize event handler
 window.addEventListener("resize", function() {
     engine.resize();
 });
 
+// Set the mass of the jenga block to zero so that it
+// doesn't fall as you drag it.
 window.addEventListener("pointerdown", function() {
-    const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
-    pickInfo.pickedMesh.physicsImpostor.setMass(0);
+    pickedJengaObject = scene.pick(scene.pointerX, scene.pointerY);
+
+    if (pickedJengaObject.pickedMesh.name === "Box") {
+        pickedJengaObject.pickedMesh.physicsImpostor.setMass(0);
+    }
 });
+
+// Reset the mass of the jenga block when you let go of it.
+window.addEventListener("pointerup", function() {
+    if (pickedJengaObject.pickedMesh.name === "Box") {
+        pickedJengaObject.pickedMesh.physicsImpostor.setMass(JENGA_OBJECT_MASS);
+    }
+})
